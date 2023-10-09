@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import PropTypes from 'prop-types';
+import {SERVER_URL} from '../constants'
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -7,69 +7,69 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 
-
-// properties addCoure is required, function called when Add clicked.
+/*
+ *    <AddStudent onClose=<routine> />
+ */
 function AddStudent(props) { 
 
   const [open, setOpen] = useState(false);
-//   const [course_id, setCourse_id] = useState(0)
-  const [studentEmail, setStudent_email] = useState(0);
-  const [name, setStudent_name] = useState(0);
-  const [status, setStudent_status] = useState(0);
- 
+  const [student, setStudent] = useState({name:'', email:''});
+  const [message, setMessage] = useState('');
   
   const handleClickOpen = () => {
+    setMessage('');
+    setStudent({name:'', email:''});
     setOpen(true);
   };
 
   const handleClose = () => {
     setOpen(false);
+    props.onClose();
   };
 
   const handleChange = (event) => {
-    const { name, value } = event.target;
-    if (name === 'studentEmail') {
-      setStudent_email(value);
-    } else if (name === 'name') {
-      setStudent_name(value);
-    } else if (name === 'status') {
-      setStudent_status(value);
-    }
+    setStudent({...student,  [event.target.name]:event.target.value})
   }
 
-  const handleAdd = () => {
-      props.addStudent(studentEmail, name, status);
-      handleClose();
-  }
+    const addStudent = () => {
+        console.log("addStudent "+JSON.stringify(student));
+        fetch(`${SERVER_URL}/student`, 
+            {  
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', }, 
+            body: JSON.stringify(student)
+            } 
+        )
+        .then((response) => response.json() )
+        .then((data) => {
+          if (data.message) setMessage('Student not added. '+data.message);
+          else if (data) setMessage('Student added. ID='+data);
+           else setMessage('Student not added. ');
+        })
+        .catch((err) =>  { setMessage('Error. '+err) } );
+    }
+
 
   return (
       <div>
-        <Button id="addStudent" variant="outlined" color="primary" style={{margin: 10}} onClick={handleClickOpen}>
-          Add Student
+        <Button variant="outlined" color="primary" style={{margin: 10}} onClick={handleClickOpen}>
+          New Student
         </Button>
         <Dialog open={open} onClose={handleClose}>
-            <DialogTitle>Add Student</DialogTitle>
-            <DialogContent  style={{paddingTop: 15}} >
-              <TextField id="email" autoFocus fullWidth label="Student Email" name="studentEmail" onChange={handleChange}/>
-              <br></br>
-              <br></br>
-              <TextField id="name" autoFocus fullWidth label="Student Name" name="name" onChange={handleChange}/> 
-              <br></br>
-              <br></br>
-              <TextField id="status" autoFocus fullWidth label="Student Status" name="status" onChange={handleChange}/> 
+            <DialogTitle>New Student</DialogTitle>
+            <DialogContent  style={{paddingTop: 20}} >
+              <h4>{message}</h4>
+              <TextField autoFocus fullWidth label="name" name="name" onChange={handleChange}  /> 
+              <TextField fullWidth label="email" name="email" onChange={handleChange}  /> 
             </DialogContent>
             <DialogActions>
-              <Button color="secondary" onClick={handleClose}>Cancel</Button>
-              <Button id="add" color="primary" onClick={handleAdd}>Add</Button>
+              <Button color="secondary" onClick={handleClose}>Close</Button>
+              <Button id="Add" color="primary" onClick={addStudent}>Add Student</Button>
             </DialogActions>
           </Dialog>      
       </div>
   ); 
 }
 
-// required property:  addCourse is a function to call to perform the Add action
-AddStudent.propTypes = {
-    addStudent : PropTypes.func.isRequired
-}
 
-export default AddStudent
+export default AddStudent;
